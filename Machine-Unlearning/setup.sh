@@ -1,0 +1,1 @@
+conda deactivate && conda deactivate && conda activate transfer
