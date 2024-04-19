@@ -1,1 +1,1 @@
-python3 main.py --dset digits  --batch 64 --forget 2,3,4 --source mnist --target svhn --verbose
+python3 main.py --dset digits  --batch 64 --forget 2,3,4 --source mnist --target svhn --verbose --resume
