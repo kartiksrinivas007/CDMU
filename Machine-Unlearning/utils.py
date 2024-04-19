@@ -11,12 +11,14 @@ from networks import MLP, ConvNet, LeNet, AlexNet, AlexNetBN, VGG11, VGG11BN, Re
 from tqdm import tqdm 
 from torch.utils.data import DataLoader, Dataset
 from torchvision.utils import save_image
-from utility_classes import ForgetObject, UnlearningInstance
-from utils import *
-
+import pickle
 # from covidxdataset import COVIDxDataset
 # from cxrdataset import init_CXR
 
+"""
+Older utils are in here
+"""
+#region
 def get_dataset(dataset, data_path):
     if dataset == 'MNIST':
         channel = 1
@@ -738,6 +740,25 @@ AUGMENT_FNS = {
     'scale': [rand_scale],
     'rotate': [rand_rotate],
 }
+
+#endregion
+
+def checkpoint_object(obj, args):
+    # maintain the args correspoing to the dataset to make it readable in the string
+    if (not os.path.exists(f'{args.save_path}/{obj.name}')):
+        os.makedirs(f'{args.save_path}/{obj.name}')
+    file_name = f'{args.save_path}/{obj.name}/{args.dset}_{args.source}_{args.target}_{args.forget}.pkl'
+    print("Saving Checkpoint Object to....", file_name)
+    pickle.dump(obj, open(file_name, 'wb'))
+    pass
+
+def load_checkpoint_object(args, name):
+    file_name = f'{args.save_path}/{name}/{args.dset}_{args.source}_{args.target}_{args.forget}.pkl'
+    print("Loading Checkpoint Object from....", file_name)
+    # list all the files in the directory
+    object = pickle.load(open(file_name, 'rb')) #something deadly wrong here
+    return object
+
 
 #region
 # def make_forget_object(trainset, testset, forget_labels, args, dataset_names, num_classes=10):
