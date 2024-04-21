@@ -10,6 +10,8 @@ def parse_args():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
     print('Device:', device)
+    #Print the exact device name
+    print('Device Name:', torch.cuda.get_device_name(0))
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     
     
@@ -22,10 +24,12 @@ def parse_args():
     parser.add_argument('--forget', type=str, default='1,2', help='The class labels to forget')
 
 
-    parser.add_argument('--train_lr', type=float, default=1e-2, help='learning rate for models')
+    parser.add_argument('--source_lr', type=float, default=1e-2, help='learning rate for models')
     parser.add_argument('--lambda', type=float, default=0.1, help='lambda for entropy regularization')
     parser.add_argument('--batch', type = int, default=64, help ='batch size')
     parser.add_argument('--train_val_split', type=float, default=0.8, help='train val split for the datasets')
+    parser.add_argument('--source_epochs', type=int, default=10, help='number of epochs to train on source model')
+    parser.add_argument('--pretrain', action='store_true', help='pretrain the source model')
 
     
     parser.add_argument('--lambda_adv', type=float, default=1, help='lambda for adversarial training')
