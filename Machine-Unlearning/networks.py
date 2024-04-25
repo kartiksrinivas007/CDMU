@@ -38,16 +38,16 @@ class ConvNet(nn.Module):
         super(ConvNet, self).__init__()
 
         self.features, self.shape_feat = self._make_layers(channel, net_width, net_depth, net_norm, net_act, net_pooling, im_size)
-        self.num_feat = self.shape_feat[0]*self.shape_feat[1]*self.shape_feat[2]
-        self.classifier = nn.Linear(self.num_feat, num_classes)
+        self.out_features = self.shape_feat[0]*self.shape_feat[1]*self.shape_feat[2]
+        self.classifier = nn.Linear(self.out_features, num_classes)
 
     def forward(self, x):
         out = self.features(x)
-        out = out.view(out.size(0), -1)
+        latent = out.view(out.size(0), -1)
         # breakpoint()
         # print(out.size())
         # print(self.classifier)
-        out = self.classifier(out)
+        out = self.classifier(latent)
         return out
 
     def embed(self, x):
@@ -117,11 +117,11 @@ class ConvNet(nn.Module):
 
 class Encoder_ConvNet(nn.Module):
     def __init__(self, channel, num_classes, net_width, net_depth, net_act, net_norm, net_pooling, im_size = (32,32)):
-        super(ConvNet, self).__init__()
+        super(Encoder_ConvNet, self).__init__()
 
         self.features, shape_feat = self._make_layers(channel, net_width, net_depth, net_norm, net_act, net_pooling, im_size)
-        num_feat = shape_feat[0]*shape_feat[1]*shape_feat[2]
-        self.classifier = nn.Linear(num_feat, num_classes)
+        self.out_features = shape_feat[0]*shape_feat[1]*shape_feat[2]
+        self.classifier = nn.Linear(self.out_features, num_classes)
 
     def forward(self, x):
         out = self.features(x)

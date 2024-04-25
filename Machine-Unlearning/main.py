@@ -12,7 +12,17 @@ from parser_utils import *
 import pickle
 import wandb
 from train import *
+# from salad import solver
+import sys
+from torch.optim.lr_scheduler import LambdaLR
 
+from tllib.modules.domain_discriminator import DomainDiscriminator
+from tllib.alignment.dann import DomainAdversarialLoss, ImageClassifier
+from tllib.utils.data import ForeverDataIterator
+from tllib.utils.metric import accuracy
+from tllib.utils.meter import AverageMeter, ProgressMeter
+from tllib.utils.logger import CompleteLogger
+from tllib.utils.analysis import collect_feature, tsne, a_distance
 if __name__ == "__main__":
     
     
@@ -70,7 +80,7 @@ if __name__ == "__main__":
         ui.display_variables()
     # now we bring a model in that can handle this information
     if (args.dset == "digits"):
-        
+        num_classes = 10
         
         """
         Get the source model and train it on the source dataset
@@ -94,11 +104,33 @@ if __name__ == "__main__":
                 exit(0)
         #endregion
 
-            
+        
         # test the model on the test loader of the source dataset
         validate(args, source_model, ui.full_source_test_loader, "source_model", is_test=True)
-        
+    # get the transfer learning library inside the environment
+    
+    """
+    Need to create these arguments to pass into the function fr domain adversarial trianing 
+    args, classifier,discriminator, 
+               train_loader, val_loader, 
+               save_path
+    """
+    
+    # obtain the sub-network or backbone of the source model
+    new_source_backbone = get_network(
+        "EncoderConvNet", channel=3, num_classes=10, im_size=(32, 32)
+    )
+
+    pool_layer = nn.Identity()
+    classifier = ImageClassifier(new_source_backbone, num_classes,bottleneck_dim=1024,pool_layer=pool_layer).to(args.device) # might have to precompute this value
+    disc = DomainDiscriminator(classifier.features_dim, hidden_size=1024).to(args.device)
     
     
-        
+    adv_optimizer = torch.optim.SGD(classifier.get_parameters() + disc.get_parameters(), lr = args.adv_lr, 
+                                momentum=0.9, weight_decay=args.adv_weight_decay, nesterov=True)
+    lr_scheduler = LambdaLR(optimizer, lambda x: args.adv_lr * (1. + args.adv_lr_gamma * float(x)) ** (-args.adv_lr_decay))
+    
+    train_dann(args, classifier, disc, adv_optimizer, lr_scheduler, ui.full_source_train_loader, ui.full_source_val_loader, 
+               ui.full_target_train_loader, ui.full_target_val_loader, os.path.join(CONFIG_SAVE_PATH, f"{args.source}_model.pth"))
+
     pass

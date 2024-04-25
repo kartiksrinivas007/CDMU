@@ -7,11 +7,7 @@ import numpy as np
 def parse_args():
     
     parser = argparse.ArgumentParser(description='Machine Unlearning')
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    
-    print('Device:', device)
-    #Print the exact device name
-    print('Device Name:', torch.cuda.get_device_name(0))
+
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     
     
@@ -22,7 +18,7 @@ def parse_args():
     parser.add_argument('--verbose', action = 'store_true', help='State the Variables and be verbose')
     parser.add_argument('--seed', type = int, default=0, help = 'random seeds')
     parser.add_argument('--forget', type=str, default='1,2', help='The class labels to forget')
-
+    parser.add_argument('--device', type=str, default='cuda', help='device to train on')
 
     parser.add_argument('--source_lr', type=float, default=1e-2, help='learning rate for models')
     parser.add_argument('--lambda', type=float, default=0.1, help='lambda for entropy regularization')
@@ -35,13 +31,21 @@ def parse_args():
     parser.add_argument('--lambda_adv', type=float, default=1, help='lambda for adversarial training')
     parser.add_argument('--adv_lr', type=float, default=1e-2, help='learning rate for adversarial training')
     parser.add_argument('--adv_epochs', type=int, default=10, help='number of epochs to train on adversarial model')
-
+    parser.add_argument('--adv_momentum', type=float, default=0.9, help='momentum for adversarial training')
+    parser.add_argument('--adv_weight_decay', type=float, default=1e-4, help='weight decay for adversarial training')
+    parser.add_argument('--adv_lr_decay', type=float, default=0.75, help='learning rate decay for adversarial training')
+    parser.add_argument('--adv_lr_gamma', type=float, default=0.001, help='learning rate gamma for adversarial training')
+    parser.add_argument('--trade_off', type=float, default=1, help='trade off for adversarial training')
     
     parser.add_argument('--test', type = bool, default=True, help='test trained models')
     parser.add_argument('--resume', action='store_true', help='resume from checkpoint for the adversarial training (not the pretraining)')
     
     args  = parser.parse_args()
-    args.device = device
+    
+    if (not torch.cuda.is_available()):
+        args.device = 'cpu'
+        
+    # args.device = device
     
     
     return args
