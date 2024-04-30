@@ -173,7 +173,7 @@ def get_default_convnet_setting():
 
 
 
-def get_network(model, channel, num_classes, im_size=(32, 32)):
+def get_network(model, channel, num_classes, im_size=(32, 32), devs=None):
     # torch.random.manual_seed(int(time.time() * 1000) % 100000)
     net_width, net_depth, net_act, net_norm, net_pooling = get_default_convnet_setting()
 
@@ -258,7 +258,10 @@ def get_network(model, channel, num_classes, im_size=(32, 32)):
     if gpu_num>0:
         device = 'cuda'
         if gpu_num>1:
-            net = nn.DataParallel(net)
+            if devs is None:
+                devs = list(range(gpu_num))
+            
+            net = nn.DataParallel(net, device_ids=devs)
     else:
         device = 'cpu'
     net = net.to(device)

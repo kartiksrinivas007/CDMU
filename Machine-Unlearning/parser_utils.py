@@ -27,7 +27,7 @@ def parse_args():
     parser.add_argument('--source_epochs', type=int, default=10, help='number of epochs to train on source model')
     parser.add_argument('--pretrain', action='store_true', help='pretrain the source model')
 
-    
+    parser.add_argument('--adv_train', action='store_true', help='train the adversarial model')
     parser.add_argument('--lambda_adv', type=float, default=1, help='lambda for adversarial training')
     parser.add_argument('--adv_lr', type=float, default=1e-2, help='learning rate for adversarial training')
     parser.add_argument('--adv_epochs', type=int, default=10, help='number of epochs to train on adversarial model')
@@ -37,9 +37,17 @@ def parse_args():
     parser.add_argument('--adv_lr_gamma', type=float, default=0.001, help='learning rate gamma for adversarial training')
     parser.add_argument('--trade_off', type=float, default=1, help='trade off for adversarial training')
     
+    parser.add_argument('--ft_lr', type=float, default=1e-3, help='learning rate for fine tuning')
+    parser.add_argument('--lambda_pseudo', type=float, default=1, help='lambda for the weight opf forgetting in pseudo')
+    parser.add_argument('--algorithm', type=str, default='ewc', help='algorithm to use for unlearning')
+    parser.add_argument('--fisher', action='store_true', help='use fisher information for unlearning')
+    parser.add_argument('--lambda_ewc', type=float, default=1e-7, help='lambda for ewc loss')
+    parser.add_argument('--num_forget', type=int, default=100, help='number of samples to forget')
+    parser.add_argument('--lambda_fisher', type=float, default=1e-3, help='lambda for fisher loss')
     parser.add_argument('--test', type = bool, default=True, help='test trained models')
     parser.add_argument('--resume', action='store_true', help='resume from checkpoint for the adversarial training (not the pretraining)')
-    
+    parser.add_argument('--fine_tune_epochs', type=int, default=1, help='number of epochs to finetune the model')
+    parser.add_argument('--lambda_rl', type=float, default=1e-3, help='lambda for the re-parametrized lagrangian')
     args  = parser.parse_args()
     
     if (not torch.cuda.is_available()):
