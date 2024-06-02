@@ -1,6 +1,8 @@
 import torch 
 # from utils import make_forget_object - leads to circular import
 from utils import *
+from torch.utils.data import DataLoader, Subset
+
 
 def make_forget_object(trainset, testset, forget_labels, args, dataset_names, num_classes=10):
     """
@@ -106,9 +108,15 @@ class UnlearningInstance:
         self.full_source_testset = information['testset'][source_index]
         self.full_source_test_loader = information['test_loader'][source_index]
         
-        self.source_forget = make_forget_object(self.full_source_trainset, self.full_source_testset, 
-                                                forget_labels, args, 
-                                                information['dataset_names'], information['num_classes'])
+        # self.source_forget = make_forget_object(self.full_source_trainset, self.full_source_testset, 
+        #                                         forget_labels, args, 
+        #                                         information['dataset_names'], information['num_classes'])
+        # the source forgetting need not be doen via class and can instead be done via a random seed of 100 or say samples to forget information
+        # self.source_forget = 
+        
+        
+        samples_forgetset = Subset(self.full_source_trainset, indices= [i for i in range(args.num_forget)])
+        self.source_forget = DataLoader(samples_forgetset, batch_size=args.batch, shuffle=True)
         
     
         self.full_source_val_loader = information['val_loader'][source_index]
@@ -128,10 +136,12 @@ class UnlearningInstance:
         
         self.full_target_val_loader = information['val_loader'][target_index]
 
-        self.target_forget = make_forget_object(self.full_target_trainset, self.full_target_testset,
-                                                forget_labels, args, 
-                                                information['dataset_names'], information['num_classes'])
+        # self.target_forget = make_forget_object(self.full_target_trainset, self.full_target_testset,
+        #                                         forget_labels, args, 
+        #                                         information['dataset_names'], information['num_classes'])
         
+        samples_forgetset = Subset(self.full_target_trainset, indices= [i for i in range(args.num_forget)])
+        self.target_forget = DataLoader(samples_forgetset, batch_size=args.batch, shuffle=True)        
         #endregion
         
         self.source_shape = next(iter(self.full_source_train_loader))[0].shape
@@ -145,9 +155,10 @@ class UnlearningInstance:
         print(f'Target Shape = {self.target_shape}')
         print("Forgetting classes = ", self.forget_labels)
         print('================================Source Forget Object=========================')
-        self.source_forget.display_variables()
+        # self.source_forget.display_variables()
+        
         print('================================Target Forget Object=========================')
-        self.target_forget.display_variables()
+        # self.target_forget.display_variables()
         pass
 
 

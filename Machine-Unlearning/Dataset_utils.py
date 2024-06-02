@@ -39,7 +39,7 @@ def stats_dataset(dataset):
     return mean, torch.sqrt(std)
     
 
-def return_domain_information(args, root_dir='./dataset/OHDS', batch_size = 32, train_val_split = 0.8):
+def return_domain_information(args, root_dir='./dataset/OHDS', batch_size = 32, train_test_split = 0.8):
     """
     Returns the information dictionary, which contains the train loaders val loaders and test loaders of each of the domains
     Also returns the dataset_names as a second output
@@ -104,17 +104,21 @@ def return_domain_information(args, root_dir='./dataset/OHDS', batch_size = 32, 
                 domain_loader = DataLoader(domain_dataset, batch_size=batch_size)
                 
                 # calc image stats 
-                
+                information['num_classes'] = 65
                 # mean, std_dev  = stats_dataset(domain_dataset)
-                information['data_loader'].append(domain_loader)
+                # information['data_loader'].append(domain_loader)
                 # print(mean, std_dev)
 
                 # split them into 2
 
-                domain_train_dataset, domain_test_dataset = random_split(domain_dataset, lengths=[train_val_split, (1 - train_val_split)])
-                information['train_loader'].append(DataLoader(domain_train_dataset, batch_size= batch_size))
-                information['test_loader'].append(DataLoader(domain_test_dataset, batch_size= batch_size))
+                domain_train_dataset, domain_test_dataset = random_split(domain_dataset, lengths=[train_test_split, (1 - train_test_split)])
+                domain_train_set, domain_val_set  = random_split(domain_train_dataset, lengths = [args.train_val_split, 1 - args.train_val_split])
+                information['trainset'].append(domain_train_set)
+                information['testset'].append(domain_test_dataset)
                 
+                information['train_loader'].append(DataLoader(domain_train_set, batch_size= args.batch))
+                information['val_loader'].append(DataLoader(domain_val_set , batch_size= args.batch))
+                information['test_loader'].append(DataLoader(domain_test_dataset, batch_size= args.batch))
                 
                 # breakpoint()
             pass

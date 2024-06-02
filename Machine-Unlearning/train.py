@@ -39,8 +39,10 @@ def train_model(args, model_name, num_epochs, optimizer, model, train_loader, va
             
         if (epoch % 1 == 0):
             print(f"Epoch: {epoch} Iteration: {index} Loss: {loss.item()}")
-            wandb.log({f"{model_name}_training_loss": loss.item()})
-            wandb.log({f"{model_name}_epoch": epoch})
+            if(args.wandb):
+                wandb.log({f"{model_name}_training_loss": loss.item()})
+                wandb.log({f"{model_name}_epoch": epoch})
+            
             accuracy = validate(args, model, val_loader, model_name)
             if (accuracy > best_accuracy and epoch > 8):
                 best_accuracy = accuracy
@@ -71,7 +73,8 @@ def validate(args, model, val_loader, model_name, is_test=False):
 
     log_title = "Validation" if not is_test else "Test"
     print(f"Accuracy of {model_name} on the  {log_title} dataset is {accuracy}")
-    wandb.log({f"{model_name}_{log_title}_accuracy": accuracy})
+    if (args.wandb):
+        wandb.log({f"{model_name}_{log_title}_accuracy": accuracy})
     return accuracy
 
 

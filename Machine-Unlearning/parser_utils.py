@@ -19,6 +19,7 @@ def parse_args():
     parser.add_argument('--seed', type = int, default=0, help = 'random seeds')
     parser.add_argument('--forget', type=str, default='1,2', help='The class labels to forget')
     parser.add_argument('--device', type=str, default='cuda', help='device to train on')
+    parser.add_argument('--wandb', action='store_true', help='Wandb logging')
 
     parser.add_argument('--source_lr', type=float, default=1e-2, help='learning rate for models')
     parser.add_argument('--lambda', type=float, default=0.1, help='lambda for entropy regularization')
@@ -58,23 +59,6 @@ def parse_args():
     
     return args
 
-
-
-
-    # parser.add_argument('--index', type = int, default=4, help ='index of the training loader, what to train on 4 = MNIST, 5 = SVHN')
-    # parser.add_argument('--baseline', action='store_true', help='baseline values needed or not?')
-    # parser.add_argument('--pretrain_baseline_sub', action='store_true', help='pretrain local model')
-    
-    # parser.add_argument('--pretrain_epochs', type = int, default=5, help = 'model training iterations for pretraining')
-    
-    # parser.add_argument('--ipc', type = int, default=50, help = 'sampled noisy images per class')
-    # parser.add_argument('--model', type=str, default='ConvNet', help='model')
-
-    # parser.add_argument('--init', type = str, default='normal', help='initialization method for noisy images')
-
-    # parser.add_argument('--kd', type = bool, default=True, help='knowledge distillation')
-    # parser.add_argument('--pretrain_baseline', action='store_true', help='pretrain local model') # I think the default should be true ; )
-    # parser.add_argument('--dadv', action='store_true', help='domain adversarial training')
 
 
 def set_seed(args):

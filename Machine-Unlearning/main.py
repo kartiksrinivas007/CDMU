@@ -32,33 +32,36 @@ if __name__ == "__main__":
     # initlaize the wandb system for logging and parse the arguments 
 
     args = parse_args()
-    wandb.init(
+    if (args.wandb):
+        
+        wandb.init(
 
-    project="CDMU",
+        project="CDMU",
 
-    # track hyperparameters and run metadata
-    config={
-    "learning_rate": args.source_lr,
-    "architecture": "ConvNet",
-    "dataset": "Digits",
-    "epochs": args.source_epochs,
-    "source" : args.source,
-    "target" : args.target,
-    "adv_lr" : args.adv_lr,
-    "adv_epochs" : args.adv_epochs,
-    "adv_weight_decay" : args.adv_weight_decay,
-    "algorithm" : args.algorithm,
-    "lambda_fisher" : args.lambda_fisher,
-    "num_forget" : args.num_forget,
-    "lambda_ewc" : args.lambda_ewc,
-    "device" : args.device,
-    "seed" : args.seed,
-    "ft_lr" : args.ft_lr,
-    "fine_tune_epochs" : args.fine_tune_epochs,
-    "lambda_pseudo" : args.lambda_pseudo,
-    "lambda_rl": args.lambda_rl,
-    }
-    )
+        # track hyperparameters and run metadata
+        config={
+        "learning_rate": args.source_lr,
+        "architecture": "ConvNet",
+        "dataset": "Digits",
+        "epochs": args.source_epochs,
+        "source" : args.source,
+        "target" : args.target,
+        "adv_lr" : args.adv_lr,
+        "adv_epochs" : args.adv_epochs,
+        "adv_weight_decay" : args.adv_weight_decay,
+        "algorithm" : args.algorithm,
+        "lambda_fisher" : args.lambda_fisher,
+        "num_forget" : args.num_forget,
+        "lambda_ewc" : args.lambda_ewc,
+        "device" : args.device,
+        "seed" : args.seed,
+        "ft_lr" : args.ft_lr,
+        "fine_tune_epochs" : args.fine_tune_epochs,
+        "lambda_pseudo" : args.lambda_pseudo,
+        "lambda_rl": args.lambda_rl,
+        }
+        )
+
     
     CUDA_VISIBLE_DEVICES = os.environ.get('CUDA_VISIBLE_DEVICES')
     if (CUDA_VISIBLE_DEVICES is not None):
@@ -96,16 +99,18 @@ if __name__ == "__main__":
     
     CONFIG_SAVE_PATH = os.path.join(args.save_path, f"Joint/{args.source}")
     SOURCE_PRETRAIN_SAVE_PATH = os.path.join(args.save_path, f"Pretrain")
+    
     if (not os.path.exists(CONFIG_SAVE_PATH)):
         os.makedirs(CONFIG_SAVE_PATH)
         
     if (not os.path.exists(SOURCE_PRETRAIN_SAVE_PATH)):
         os.makedirs(SOURCE_PRETRAIN_SAVE_PATH)
     
-        
+    
     if (args.verbose):
         ui.display_variables()
     # now we bring a model in that can handle this information
+    
     if (args.dset == "digits"):
         num_classes = 10
         
@@ -130,7 +135,45 @@ if __name__ == "__main__":
             except:
                 print("Could not load the source model, please pretrain the model")
                 exit(0)
+                
+            
+        new_source_backbone = get_network(
+        "EncoderConvNet", channel=3, num_classes=10, im_size=(32, 32),
+        )
+        pool_layer = nn.Identity()
+        
         #endregion
+    elif args.dset == "office":
+        num_classes = 65
+        
+        """
+        Get the source model and train it on the source dataset
+        """
+        #region
+        source_model = get_network("ConvNet", channel = 3, num_classes = num_classes, im_size=(224, 224))
+        source_model.to(args.device)
+        # breakpoint()
+        optimizer = torch.optim.Adam(source_model.parameters(), lr = args.source_lr)
+        if (args.pretrain):
+            model, epoch = train_model(args, "source_model", args.source_epochs, optimizer, source_model,
+                        ui.full_source_train_loader, ui.full_source_val_loader, 
+                        os.path.join(SOURCE_PRETRAIN_SAVE_PATH, f"{args.source}_model.pth"))
+            
+            print("Best Epoch for the source model is ", epoch)
+        else:
+            try:   
+                source_model.load_state_dict(torch.load(os.path.join(SOURCE_PRETRAIN_SAVE_PATH, f"{args.source}_model.pth")))
+                print("Loaded the source model")
+                source_model = source_model.to(args.device)
+            except:
+                print("Could not load the source model, please pretrain the model")
+                exit(0) 
+                
+        new_source_backbone = get_network(
+        "EncoderConvNet", channel=3, num_classes=65, im_size=(224, 224),
+        )
+        pool_layer = nn.Identity() 
+        pass
 
         
         # test the model on the test loader of the source dataset
@@ -149,15 +192,13 @@ if __name__ == "__main__":
     """
     #region
     # breakpoint()
-    new_source_backbone = get_network(
-        "EncoderConvNet", channel=3, num_classes=10, im_size=(32, 32),
-    )
-    pool_layer = nn.Identity()
+
     if (args.adv_train):
         
         # obtain the sub-network or backbone of the source model
-      
-
+        
+        # backbone -> bottleneck -> head is the total flow
+        # backbone needs an out-features property that will be accessed for making the bottleneck!
         
         classifier = ImageClassifier(new_source_backbone, num_classes,bottleneck_dim=1024,pool_layer=pool_layer).to(args.device)# might have to precompute this value#########DEVICEEEEE
         disc = DomainDiscriminator(classifier.features_dim, hidden_size=1024).to(args.device)
@@ -180,28 +221,28 @@ if __name__ == "__main__":
             exit(0)
         pass
     
-    try: 
-        fisher_diagonal = pickle.load(open(os.path.join(CONFIG_SAVE_PATH, f"{args.target}_fisher_diagonal.pkl"), "rb"))
-        print("Loaded the fisher diagonal")
-    except:
-        print("Calculating the Fisher Information")
-        new_loader = DataLoader(ui.full_target_trainset, batch_size=1, shuffle=False)
-        fisher_diagonal = compute_diagonal_fisher(args, classifier, new_loader, num_classes, args.device)
-        # dump the diagonal fisher information into a file
-        with open(os.path.join(CONFIG_SAVE_PATH, f"{args.target}_fisher_diagonal.pkl"), "wb") as f:
-            pickle.dump(fisher_diagonal, f)
+    # try: 
+    #     fisher_diagonal = pickle.load(open(os.path.join(CONFIG_SAVE_PATH, f"{args.target}_fisher_diagonal.pkl"), "rb"))
+    #     print("Loaded the fisher diagonal")
+    # except:
+    #     print("Calculating the Fisher Information")
+    #     new_loader = DataLoader(ui.full_target_trainset, batch_size=1, shuffle=False)
+    #     fisher_diagonal = compute_diagonal_fisher(args, classifier, new_loader, num_classes, args.device)
+    #     # dump the diagonal fisher information into a file
+    #     with open(os.path.join(CONFIG_SAVE_PATH, f"{args.target}_fisher_diagonal.pkl"), "wb") as f:
+    #         pickle.dump(fisher_diagonal, f)
     
     
-    fisher_diagonal = fisher_diagonal.to(args.device)
+    # fisher_diagonal = fisher_diagonal.to(args.device)
     classifier = classifier.to(args.device)
     
     # now we need to unlearn certain info in the model (see the Golathkar Implementation of it on a class-wise setup)
     # now we find gradient in the directin of the sampels to be forgotten using 100 random examples
     samples_forgetset = Subset(ui.full_source_trainset, indices= [i for i in range(args.num_forget)])
     small_forget_loader = DataLoader(samples_forgetset, batch_size=32, shuffle=True)
-    wandb.log({"Fisher" : fisher_diagonal})
-    print("Fisher diagonal one norm average", torch.mean(fisher_diagonal))
-    print("Sparsity level of fisher_diagonal", torch.sum(fisher_diagonal == 0)/len(fisher_diagonal))
+    # wandb.log({"Fisher" : fisher_diagonal})
+    # print("Fisher diagonal one norm average", torch.mean(fisher_diagonal))
+    # print("Sparsity level of fisher_diagonal", torch.sum(fisher_diagonal == 0)/len(fisher_diagonal))
     #endregion
     
     model_norm = torch.norm(torch.cat([param.flatten() for param in classifier.parameters()]))
@@ -209,7 +250,9 @@ if __name__ == "__main__":
 
     new_optim = torch.optim.SGD(classifier.get_parameters(), lr = args.ft_lr, nesterov=False)
     adam_optim = torch.optim.Adam(classifier.get_parameters(), lr = args.ft_lr)
-    classifier_copy = copy.deepcopy(classifier)
+    classifier_copy = copy.deepcopy(classifier) # this is a deepcopy and not a reference
+    
+    
     if (args.algorithm == "ewc"):
         regularized_fine_tune(args, classifier, classifier_copy, new_optim, small_forget_loader, num_classes,ui.full_target_train_loader, small_forget_loader,args.fisher, fisher=fisher_diagonal)
     elif (args.algorithm == "newton"):
