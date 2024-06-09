@@ -316,3 +316,6 @@ def get_empirical_fisher_information(args, classifier, high_confidence_samples, 
             if (j in y):
                 fisher_matrix[j] += torch.autograd.grad(y_hat[:, j].sum(), classifier.parameters(), retain_graph=True)
     return fisher_matrix
+
+
+# maybe that piece of code was not the best, but hey, I can copy an environment when I want to

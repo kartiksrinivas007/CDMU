@@ -1,6 +1,8 @@
 import torch
+import torchvision
 import torch.nn as nn
 import torch.nn.functional as F
+from torchsummary import summary
 # Acknowledgement to
 # https://github.com/kuangliu/pytorch-cifar,
 # https://github.com/BIGBALLON/CIFAR-ZOO,
@@ -30,7 +32,27 @@ class MLP(nn.Module):
         out = self.fc_3(out)
         return out
 
-
+class _resnet_50_(nn.Module):
+    def __init__(self, channel, num_classes, im_size):
+        super(_resnet_50_,self).__init__()
+        model = torchvision.models.resnet50(pretrained=True, progress=True)
+        if (1):
+            print("="*15)
+            for name, param in model.named_parameters():
+                print(name, param.shape)
+            print("="*15)
+            for name, param in model.state_dict().items():
+                print(name, param)
+            print("="*15)
+            pass
+        else:
+            pass
+        self.model = model
+        pass
+    def forward(self, x):
+        return self.model(x)
+        pass
+    pass
 
 ''' ConvNet '''
 class ConvNet(nn.Module):
@@ -583,6 +605,16 @@ class ResNet(nn.Module):
 
 def ResNet18BN(channel, num_classes):
     return ResNet(BasicBlock, [2,2,2,2], channel=channel, num_classes=num_classes, norm='batchnorm')
+
+
+
+def res_net_50(channels, num_classes, input_size = (224, 224)):
+    """
+    A custom resnet 50 model built for the purpose of working on the Office-Home dataset
+    We need to define a class for the RESNET 50 first
+    """
+    
+    pass
 
 def ResNet18(channel, num_classes, im_size):
     return ResNet(BasicBlock, [2,2,2,2], channel=channel, num_classes=num_classes, im_size=im_size)

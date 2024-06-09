@@ -21,7 +21,7 @@ def parse_args():
     parser.add_argument('--device', type=str, default='cuda', help='device to train on')
     parser.add_argument('--wandb', action='store_true', help='Wandb logging')
 
-    parser.add_argument('--source_lr', type=float, default=1e-2, help='learning rate for models')
+    parser.add_argument('--source_lr', type=float, default=1e-3, help='learning rate for models')
     parser.add_argument('--lambda', type=float, default=0.1, help='lambda for entropy regularization')
     parser.add_argument('--batch', type = int, default=64, help ='batch size')
     parser.add_argument('--train_val_split', type=float, default=0.8, help='train val split for the datasets')

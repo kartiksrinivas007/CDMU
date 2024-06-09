@@ -150,7 +150,8 @@ if __name__ == "__main__":
         Get the source model and train it on the source dataset
         """
         #region
-        source_model = get_network("ConvNet", channel = 3, num_classes = num_classes, im_size=(224, 224))
+        source_model = get_network("_resnet_50_", channel = 3, num_classes = num_classes, im_size=(224, 224))
+        breakpoint()
         source_model.to(args.device)
         # breakpoint()
         optimizer = torch.optim.Adam(source_model.parameters(), lr = args.source_lr)

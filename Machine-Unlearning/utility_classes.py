@@ -91,6 +91,7 @@ class UnlearningInstance:
         """
         self.name = "Unlearning_Instance"
         forget_labels = [int(x) for x in args.forget.split(',')]
+        self.batch_size = args.batch
         self.forget_labels = forget_labels
         source_index = information['dataset_names'].index(args.source)
         target_index = information['dataset_names'].index(args.target)
@@ -108,15 +109,15 @@ class UnlearningInstance:
         self.full_source_testset = information['testset'][source_index]
         self.full_source_test_loader = information['test_loader'][source_index]
         
-        # self.source_forget = make_forget_object(self.full_source_trainset, self.full_source_testset, 
-        #                                         forget_labels, args, 
-        #                                         information['dataset_names'], information['num_classes'])
+        self.source_forget = make_forget_object(self.full_source_trainset, self.full_source_testset,
+                                                forget_labels, args,
+                                                information['dataset_names'], information['num_classes'])
         # the source forgetting need not be doen via class and can instead be done via a random seed of 100 or say samples to forget information
         # self.source_forget = 
         
         
-        samples_forgetset = Subset(self.full_source_trainset, indices= [i for i in range(args.num_forget)])
-        self.source_forget = DataLoader(samples_forgetset, batch_size=args.batch, shuffle=True)
+        # samples_forgetset = Subset(self.full_source_trainset, indices= [i for i in range(args.num_forget)])
+        # self.source_forget = DataLoader(samples_forgetset, batch_size=args.batch, shuffle=True)
         
     
         self.full_source_val_loader = information['val_loader'][source_index]
@@ -136,12 +137,12 @@ class UnlearningInstance:
         
         self.full_target_val_loader = information['val_loader'][target_index]
 
-        # self.target_forget = make_forget_object(self.full_target_trainset, self.full_target_testset,
-        #                                         forget_labels, args, 
-        #                                         information['dataset_names'], information['num_classes'])
+        self.target_forget = make_forget_object(self.full_target_trainset, self.full_target_testset,
+                                                forget_labels, args,
+                                                information['dataset_names'], information['num_classes'])
         
-        samples_forgetset = Subset(self.full_target_trainset, indices= [i for i in range(args.num_forget)])
-        self.target_forget = DataLoader(samples_forgetset, batch_size=args.batch, shuffle=True)        
+        # samples_forgetset = Subset(self.full_target_trainset, indices= [i for i in range(args.num_forget)])
+        # self.target_forget = DataLoader(samples_forgetset, batch_size=args.batch, shuffle=True)
         #endregion
         
         self.source_shape = next(iter(self.full_source_train_loader))[0].shape
@@ -153,12 +154,20 @@ class UnlearningInstance:
         print(f'Target Index = {self.target_index}')
         print(f'Source Shape = {self.source_shape}')
         print(f'Target Shape = {self.target_shape}')
+        print(f"Source Test length total  {len(self.full_source_test_loader)*self.batch_size}" )
+        print(f"Source Training length total  {len(self.full_source_train_loader)*self.batch_size}" )
+        print(f"Validation length total  {len(self.full_source_val_loader)*self.batch_size}" )
+
+        print(f"Target Test length total  {len(self.full_target_test_loader)*self.batch_size}" )
+        print(f"Target Training length total  {len(self.full_target_test_loader)*self.batch_size}" )
+        print(f"Target val length total  {len(self.full_target_val_loader)*self.batch_size}" )
+
         print("Forgetting classes = ", self.forget_labels)
         print('================================Source Forget Object=========================')
-        # self.source_forget.display_variables()
+        self.source_forget.display_variables()
         
         print('================================Target Forget Object=========================')
-        # self.target_forget.display_variables()
+        self.target_forget.display_variables()
         pass
 
 
