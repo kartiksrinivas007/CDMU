@@ -7,7 +7,7 @@ import torch.nn.functional as F
 from torch.utils.data import Dataset
 from torchvision import datasets, transforms
 from scipy.ndimage.interpolation import rotate as scipyrotate
-from networks import MLP, ConvNet, LeNet, AlexNet, AlexNetBN, VGG11, VGG11BN, ResNet18, ResNet18BN_AP, ResNet18BN, AE, Encoder_ConvNet, _resnet_50_
+from networks import MLP, ConvNet, LeNet, AlexNet, AlexNetBN, VGG11, VGG11BN, ResNet18, ResNet18BN_AP, ResNet18BN, AE, Encoder_ConvNet, _resnet_50_,_resnet_50_backbone
 from tqdm import tqdm 
 from torch.utils.data import DataLoader, Dataset
 from torchvision.utils import save_image
@@ -185,6 +185,8 @@ def get_network(model, channel, num_classes, im_size=(32, 32), devs=None):
         net = Encoder_ConvNet(channel=channel, num_classes=num_classes, net_width=net_width, net_depth=net_depth, net_act=net_act, net_norm=net_norm, net_pooling=net_pooling, im_size=im_size)
     elif model == '_resnet_50_':
         net = _resnet_50_(channel=channel, num_classes=num_classes, im_size=im_size)
+    elif model == '_resnet_50_backbone':
+        net = _resnet_50_backbone(channel=channel, num_classes=num_classes,im_size=im_size)
     elif model == 'LeNet':
         net = LeNet(channel=channel, num_classes=num_classes)
     elif model == 'AlexNet':
@@ -259,11 +261,11 @@ def get_network(model, channel, num_classes, im_size=(32, 32), devs=None):
     gpu_num = torch.cuda.device_count()
     if gpu_num>0:
         device = 'cuda'
-        if gpu_num>1:
+        if gpu_num >= 1:
             if devs is None:
                 devs = list(range(gpu_num))
             
-            # net = nn.DataParallel(net, device_ids=devs) # has been commented out to see how the training progresses
+            net = nn.DataParallel(net, device_ids=devs) # has been commented out to see how the training progresses
     else:
         device = 'cpu'
     net = net.to(device)

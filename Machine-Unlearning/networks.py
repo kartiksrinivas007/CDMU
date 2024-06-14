@@ -2,7 +2,7 @@ import torch
 import torchvision
 import torch.nn as nn
 import torch.nn.functional as F
-from torchsummary import summary
+from torchinfo  import summary
 # Acknowledgement to
 # https://github.com/kuangliu/pytorch-cifar,
 # https://github.com/BIGBALLON/CIFAR-ZOO,
@@ -36,14 +36,23 @@ class _resnet_50_(nn.Module):
     def __init__(self, channel, num_classes, im_size):
         super(_resnet_50_,self).__init__()
         model = torchvision.models.resnet50(pretrained=True, progress=True)
+        print(model)
         if (1):
             print("="*15)
-            for name, param in model.named_parameters():
-                print(name, param.shape)
+            for param in model.parameters():
+                param.requires_grad=False # by convention this is now a leaf tensor
+                param.grad = None
             print("="*15)
-            for name, param in model.state_dict().items():
-                print(name, param)
-            print("="*15)
+            model.requires_grad_(False)
+            model.fc = nn.Linear(model.fc.in_features, num_classes)
+            summary(model.to('cpu'), (1, 3, 224, 224))
+            #for name, param in model.state_dict().items():
+            #    print(name, param)
+            #print("="*15)
+
+            #train_nodes,_ = get_graph_node_names(model)
+            #print(train_nodes)
+            # self.backbone = create_feature_extractor(m, return_nodes = {f'layer{k}'})
             pass
         else:
             pass
@@ -54,6 +63,37 @@ class _resnet_50_(nn.Module):
         pass
     pass
 
+class _resnet_50_backbone(nn.Module):
+    def __init__(self, channel, num_classes, im_size, out_features=10000):
+        super(_resnet_50_backbone,self).__init__()
+        model = torchvision.models.resnet50(pretrained=True, progress=True)
+        self.out_features=out_features # this command is necessary for the TLLIB to catch out_features
+        #print(model)
+        if (1):
+            print("="*15)
+            for param in model.parameters():
+                param.requires_grad=False # by convention this is now a leaf tensor
+                param.grad=None
+            print("="*15)
+            model.requires_grad_(False)
+            model.fc = nn.Linear(model.fc.in_features, out_features)
+            summary(model.to('cpu'), (1, 3, 224, 224))
+            #for name, param in model.state_dict().items():
+            #    print(name, param)
+            #print("="*15)
+
+            #train_nodes,_ = get_graph_node_names(model)
+            #print(train_nodes)
+            # self.backbone = create_feature_extractor(m, return_nodes = {f'layer{k}'})
+            pass
+        else:
+            pass
+        self.model = model
+        pass
+    def forward(self, x):
+        return self.model(x)
+        pass
+    pass
 ''' ConvNet '''
 class ConvNet(nn.Module):
     def __init__(self, channel, num_classes, net_width, net_depth, net_act, net_norm, net_pooling, im_size = (32,32)):

@@ -16,7 +16,7 @@ from tllib.utils.analysis import collect_feature, tsne, a_distance
 
 import gc
 
-def train_model(args, model_name, num_epochs, optimizer, model, train_loader, val_loader, save_path):
+def train_model(args,num_epochs, optimizer, model, train_loader, val_loader, save_path, is_classifier=False):
     """
     Trains the model assuming that the model is already on the correct device 
     with the `model_name` used for the loggin progress on wandb
@@ -31,7 +31,10 @@ def train_model(args, model_name, num_epochs, optimizer, model, train_loader, va
             images = images.to(device)
             labels = labels.to(device)
             # breakpoint()
-            logits = model(images) # 64, 10
+            if is_classifier:
+                logits,_ = model(images)
+            else:
+                logits = model(images) # 64, 10
             loss = criterion(logits, labels)
             optimizer.zero_grad()
             loss.backward()
@@ -40,19 +43,19 @@ def train_model(args, model_name, num_epochs, optimizer, model, train_loader, va
         if (epoch % 1 == 0):
             print(f"Epoch: {epoch} Iteration: {index} Loss: {loss.item()}")
             if(args.wandb):
-                wandb.log({f"{model_name}_training_loss": loss.item()})
-                wandb.log({f"{model_name}_epoch": epoch})
+                wandb.log({f"training loss": loss.item()})
+                wandb.log({f"Training epoch": epoch})
             
-            accuracy = validate(args, model, val_loader, model_name)
+            accuracy = validate(args, model, val_loader, "Source Training Accuracy")
             if (accuracy > best_accuracy and epoch > 8):
                 best_accuracy = accuracy
-                torch.save(model.state_dict(), save_path)
+                torch.save(model , save_path)
                 best_epoch = epoch  
             pass
         
     return model, best_epoch
                             
-def validate(args, model, val_loader, model_name, is_test=False):
+def validate(args, model, val_loader, print_string):
     """
     Validates the model on the validation dataset assuming that the model is already on the specified device
     """
@@ -71,10 +74,10 @@ def validate(args, model, val_loader, model_name, is_test=False):
             pass
     accuracy = 100 * correct / total
 
-    log_title = "Validation" if not is_test else "Test"
-    print(f"Accuracy of {model_name} on the  {log_title} dataset is {accuracy}")
+    print(print_string + f': {accuracy}')
+
     if (args.wandb):
-        wandb.log({f"{model_name}_{log_title}_accuracy": accuracy})
+        wandb.log({print_string : accuracy})
     return accuracy
 
 
@@ -106,8 +109,9 @@ def train_dann(
         discriminator.train()
         avg_loss, avg_cls_loss, avg_transfer_loss = 0,0,0
         avg_domain_acc = 0
-        wandb.log({f"Adversarial epoch": epoch})
-        wandb.log({f"Adversarial lr": scheduler.get_last_lr()[0]})
+        if(args.wandb):
+            wandb.log({f"Adversarial epoch": epoch})
+            wandb.log({f"Adversarial lr": scheduler.get_last_lr()[0]})
         
         # need to check how many iterations are needed per epoch, approximately depends on the batchsize
         ITERATIONS_PER_EPOCH = max(len(source_train_loader), len(target_train_loader))
@@ -155,21 +159,22 @@ def train_dann(
             avg_cls_loss /= ITERATIONS_PER_EPOCH
             avg_transfer_loss /= ITERATIONS_PER_EPOCH
             avg_domain_acc /= ITERATIONS_PER_EPOCH
-            
-            wandb.log(
+
+            if (args.wandb):
+                wandb.log(
                 {
-                    "Full Training Loss": avg_loss,
-                    "Source Classification Loss": avg_cls_loss,
-                    "Transfer Loss": avg_transfer_loss,
-                    "Domain Prediction Accuracy": avg_domain_acc,
+                     "Full Training Loss": avg_loss,
+                     "Source Classification Loss": avg_cls_loss,
+                     "Transfer Loss": avg_transfer_loss,
+                     "Domain Prediction Accuracy": avg_domain_acc,
                 }
-            )
+                )
             
             #calculate the validation accuracies of your DA model
-            val_accuracy = validate(args, classifier, target_val_loader, model_name="DA Model")
+            val_accuracy = validate(args, classifier, target_val_loader, "Adapting Model on Target Validation Loader:- ")
             if(val_accuracy > best_accuracy):
                 best_accuracy = val_accuracy
-                torch.save(classifier.state_dict(), save_path)
+                torch.save(classifier, save_path)
                 pass
             pass
             
